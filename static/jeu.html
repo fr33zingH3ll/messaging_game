@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>messageries</title>
+    <script>
+        const socket = new WebSocket("ws://localhost:3000/ws/" + new URLSearchParams(document.location.search).get('id'));
+        // Connection opened
+        socket.addEventListener("open", (event) => {
+            document.getElementById("submit").addEventListener("click", () => {
+                const msg = document.getElementById('msg').value;
+                if (msg != '') {
+                    //console.log(msg);
+                    let json = {
+                        message: msg
+                    }
+
+                    socket.send(JSON.stringify(json));
+                }
+            });
+        });
+
+        // Listen for messages
+        socket.addEventListener("message", (event) => {
+            const json = JSON.parse(event.data);
+            const newMsg = document.createElement("p");
+            newMsg.textContent = json.autheur + ' : ' + json.message;
+            const conv = document.getElementById("begin");
+            conv.append(newMsg);
+
+            console.log("Message from server ", json.message);
+        });
+
+    </script>
+</head>
+
+<body>
+    <section id="conv">
+        <p id="begin">debut de la game dans </p>
+    </section>
+
+    <section>
+        <input type="text" id="msg">
+        <input type="submit" id="submit">
+    </section>
+</body>
+
+</html>
