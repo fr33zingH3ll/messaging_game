@@ -7,29 +7,90 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>messageries</title>
     <script>
-        const socket = new WebSocket("ws://localhost:3000/ws/" + new URLSearchParams(document.location.search).get('id'));
+        const channel = new URLSearchParams(document.location.search).get('id');
+        const socket = new WebSocket("ws://localhost:3000/ws/" + channel);
         // Connection opened
         socket.addEventListener("open", (event) => {
-            document.getElementById("submit").addEventListener("click", () => {
-                const msg = document.getElementById('msg').value;
+            fetch('/message/' + channel)
+                .then((response) => response.json())
+                .then((json) => {
+                    json.forEach(element => {
+                        //console.log(element);
+                        const newMsg = document.createElement("p");
+                        newMsg.textContent = element.autheur + ' : ' + element.message;
+                        const conv = document.getElementById("begin_game");
+                        conv.append(newMsg);
+                    });
+                });
+            document.getElementById("submit_conv").addEventListener("click", () => {
+                const msg = document.getElementById('msg_conv').value;
+                msg.value = '';
                 if (msg != '') {
                     //console.log(msg);
                     let json = {
+                        action: 'conv',
                         message: msg
                     }
 
                     socket.send(JSON.stringify(json));
                 }
             });
+            document.getElementById("submit_game").addEventListener("click", () => {
+                const msg = document.getElementById('msg_game').value;
+                msg.value = '';
+                if (msg != '') {
+                    //console.log(msg);
+                    let json = {
+                        action: 'game',
+                        message: msg
+                    }
+
+                    socket.send(JSON.stringify(json));
+                }
+            });
+            document.getElementById('msg').addEventListener('keydown', () => {
+                //console.log(msg);
+                let json =
+                {
+                    action: "typing"
+                };
+
+                socket.send(JSON.stringify(json));
+            });
         });
 
         // Listen for messages
         socket.addEventListener("message", (event) => {
             const json = JSON.parse(event.data);
-            const newMsg = document.createElement("p");
-            newMsg.textContent = json.autheur + ' : ' + json.message;
-            const conv = document.getElementById("begin");
-            conv.append(newMsg);
+            let newMsg = '';
+            switch (json.action) {
+                case 'typing':
+                    if (window.typingTimeOut) {
+                        clearTimeout(window.typingTimeOut);
+                    }
+                    document.getElementById('msg').style.backgroundColor = "yellow";
+                    window.typingTimeOut = setTimeout(() => {
+                        document.getElementById('msg').style.backgroundColor = "white";
+                    }, 2000);
+                    break;
+                case 'conv':
+                    newMsg = document.createElement("p");
+                    newMsg.textContent = json.autheur + ' : ' + json.message;
+                    const conv = document.getElementById("begin_conv");
+                    conv.append(newMsg);
+                    break;
+                case 'game':
+                    newMsg = document.createElement("p");
+                    newMsg.textContent = json.autheur + ' : ' + json.message;
+                    const game = document.getElementById("begin_game");
+                    conv.append(newMsg);
+                    break;
+
+
+                default:
+                    break;
+            }
+
 
             console.log("Message from server ", json.message);
         });
@@ -42,9 +103,18 @@
         <p id="begin">debut de la game dans </p>
     </section>
 
-    <section>
-        <input type="text" id="msg">
-        <input type="submit" id="submit">
+    <section style="border: solid;">
+        <p id="begin_game">debut de la game dans </p>
+        <div></div>
+        <input type="text" id="msg_game">
+        <input type="submit" id="submit_game">
+
+    </section>
+    <section style="border: solid;">
+        <p id="begin_conv">debut de la game dans </p>
+        <div></div>
+        <input type="text" id="msg_conv">
+        <input type="submit" id="submit_conv">
     </section>
 </body>
 
