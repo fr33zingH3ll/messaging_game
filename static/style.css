@@ -1,0 +1,45 @@
+:root {
+    --dark-gray: rgb(24, 24, 24);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+}
+
+/* HEADER CSS */
+header {
+    color: white;
+    background-color: var(--dark-gray);
+    padding: 2%;
+    position: sticky;
+    top: 0px;
+}
+.sous {
+    max-width: 300px;
+    height: auto;
+    width: 50vw;
+    border: solid 0.5px;
+    border-color: black;
+    padding: 2px;
+    background-color: white;
+    border-radius: 10px;
+    display: none;
+}
+.sous ul li {
+    list-style: none;
+}
+.sous ul li a {
+    color: black;
+    text-decoration: none;
+}
+.menu:hover .sous {
+    display: block;
+}
+/* MAIN CSS */
+main div {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}

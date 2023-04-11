@@ -2,7 +2,8 @@ require('dotenv').config();
 const cookieParser = require('cookie-parser');
 const EventEmitter = require('events');
 const secret = process.env.ACCESS_TOKEN_SECRET;
-const jwt = require('jsonwebtoken')
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const express = require('express');
 const app = express();
 const port = 3000;
@@ -37,6 +38,7 @@ app.ws('/ws/:channel', (ws, req) => {
                 messageBus.emit('typing.' + channel, msg);
                 break;
             case 'game':
+                /*
                 r.db('messaging').table('message')
                     .filter(r.row('channel').eq(msg.channel))
                     .orderBy('datetime').limit(1).run(conn)
@@ -50,7 +52,7 @@ app.ws('/ws/:channel', (ws, req) => {
                         switch (checkWordChaining(msg, a[0])) {
                             case 3:
                                 const warning = {
-                                    'action': a['action'],
+                                    'action': a[0].action,
                                     'autheur': 'system',
                                     'channel': channel,
                                     'message': 'attendez la réponse d\'abord'
@@ -58,13 +60,13 @@ app.ws('/ws/:channel', (ws, req) => {
                                 messageBus.emit('message.' + channel, warning);
                                 break;
                             case 2:
-                                const defeat = {
-                                    'action': 'send',
+                                const win  = {
+                                    'action': a[0].action,
                                     'autheur': 'system',
                                     'channel': channel,
                                     'message': 'vous avez gagnez ' + a[0].autheur
                                 };
-                                messageBus.emit('message.' + channel, defeat);
+                                messageBus.emit('message.' + channel, win);
                                 break;
                             case 1:
                                 messageBus.emit('message.' + channel, msg);
@@ -74,7 +76,10 @@ app.ws('/ws/:channel', (ws, req) => {
                             default:
                                 break;
                         }
-                    });
+                    });*/
+                messageBus.emit('message.' + channel, msg);
+                messageBus.emit('message', msg);
+                break;
             case 'conv':
                 messageBus.emit('message.' + channel, msg);
                 messageBus.emit('message', msg);
@@ -94,8 +99,26 @@ app.get('/message/:channel', (req, res) => {
         });
 });
 
-app.post('/token', express.urlencoded(), (req, res) => {
+app.post('/login', express.urlencoded(), (req, res) => {
     const form = req.body;
+    if (form.pseudo === '' || form.password === '') {
+        //res.redirect('login.html?error=empty')
+        console.log('cahmps vides');
+    }
+    const pseudo = form.pseudo;
+    const password = form.password;
+    r.db('messaging').table('user').filter(r.row('pseudo').eq(pseudo)).run(conn)
+        .then((c) => c.next())
+        .then((a) => {
+            if (!bcrypt.compareSync(password, a.password)) {
+                res.set({ 'Content-type': 'text/plain', 'success': false, 'description': 'mot de passe invalide' });
+                console.log('connexion échoué');
+                res.redirect('login.html');
+            }
+        })
+        .catch((err) => {
+            if (err) return res.status(400).json({ success: false, description: err });
+        });
     const session = {
         id: strRandom({
             startsWithLowerCase: true,
@@ -103,11 +126,33 @@ app.post('/token', express.urlencoded(), (req, res) => {
             includeUpperCase: true,
             includeNumbers: true
         }),
-        pseudo: form.pseudo
+        pseudo: pseudo
     };
     const accessToken = generateAccessToken(session);
-    res.cookie('token', accessToken);
-    res.redirect('/');
+    req.cookies.token = accessToken;
+    console.log('connexion réussi');
+    res.redirect('/index.html');
+});
+
+app.post('/signin', express.urlencoded(), (req, res) => {
+    const form = req.body;
+    if (form.pseudo === '' || form.password === '' || form.confirm === '') res.redirect('signin.html');
+    else if (form.password != form.confirm) res.redirect('signin.html');
+    const pseudo = form.pseudo;
+    const password = form.password;
+    r.db('messaging').table('user').filter(r.row('pseudo').eq(pseudo)).run(conn)
+        .then((c) => c.next())
+        .then((a) => {
+            console.log('ERROR: ', a);
+            res.redirect('signin.html');
+        })
+        .catch((err) => {
+            bcrypt.hash(password, 10, (err, hash) => {
+                if (err) return res.status(400).json({ success: false, description: err });
+                r.db('messaging').table('user').insert({ pseudo: pseudo, password: hash }).run(conn);
+                res.redirect('login.html');
+            });
+        });
 });
 
 app.use((err, req, res, next) => {

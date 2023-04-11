@@ -5,14 +5,48 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/feather-icons"></script>
+
     <title>accuiel</title>
 </head>
 
 <body>
-    <form action="jeu.html" method="get">
-        <input type="text" name="id">
-    </form>
-    <a href="/login.html">connexion</a>
+    <header>
+        <i class="menu" data-feather="user"></i>
+        <div class="sous">
+            <ul>
+                <li><a href="/login.html">connexion</a></li>
+                <li><a href="/signin.html">inscription</a></li>
+            </ul>
+        </div>
+    </header>
+    <main>
+        <div>
+            <label for="create">Créer</label>
+            <form id="create" action="jeu.html" method="get">
+                <input type="hidden" name="create">
+                <input type="text" name="id"><br>
+                <input type="password" name="password">
+            </form>
+            <label for="join">Rejoindre</label>
+            <form id="join" action="jeu.html" method="get">
+                <input type="hidden" name="join">
+                <input type="text" name="id"><br>
+                <input type="password" name="password">
+            </form>
+        </div>
+        <label for="for">pour le moment</label>
+        <form id="for" action="jeu.html" method="get">
+            <input type="text" name="id">
+        </form>
+    </main>
+    <footer></footer>
+
+    <script>
+        feather.replace()
+    </script>
 </body>
 
 </html>
