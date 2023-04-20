@@ -101,52 +101,45 @@ app.get('/message/:channel', (req, res) => {
 
 app.post('/login', express.urlencoded(), (req, res) => {
     const form = req.body;
-    if (form.pseudo === '' || form.password === '') {
-        //res.redirect('login.html?error=empty')
-        console.log('cahmps vides');
-    }
     const pseudo = form.pseudo;
     const password = form.password;
-    r.db('messaging').table('user').filter(r.row('pseudo').eq(pseudo)).run(conn)
-        .then((c) => c.next())
-        .then((a) => {
-            if (!bcrypt.compareSync(password, a.password)) {
-                res.set({ 'Content-type': 'text/plain', 'success': false, 'description': 'mot de passe invalide' });
-                console.log('connexion échoué');
-                res.redirect('login.html');
+    r.db('messaging').table('user').filter(r.row('pseudo').eq(pseudo)).limit(1).run(conn)
+        .then((cursor) => cursor.next())
+        .then((results) => {
+            if (bcrypt.compareSync(password, results.password)) {
+                const session = {
+                    id: strRandom({
+                        startsWithLowerCase: true,
+                        length: 8,
+                        includeUpperCase: true,
+                        includeNumbers: true
+                    }),
+                    pseudo:pseudo
+                };
+                res.cookie('token', jwt.sign(session, secret));
+                res.redirect('index.html');
             }
         })
         .catch((err) => {
-            if (err) return res.status(400).json({ success: false, description: err });
+            console.log("ERROR : ",err.message);
+            res.redirect('login.html');
         });
-    const session = {
-        id: strRandom({
-            startsWithLowerCase: true,
-            length: 8,
-            includeUpperCase: true,
-            includeNumbers: true
-        }),
-        pseudo: pseudo
-    };
-    const accessToken = generateAccessToken(session);
-    req.cookies.token = accessToken;
-    console.log('connexion réussi');
-    res.redirect('/index.html');
 });
 
 app.post('/signin', express.urlencoded(), (req, res) => {
     const form = req.body;
-    if (form.pseudo === '' || form.password === '' || form.confirm === '') res.redirect('signin.html');
-    else if (form.password != form.confirm) res.redirect('signin.html');
+    if (form.pseudo === '' || form.password === '' || form.confirm === '') return res.redirect('signin.html');
+    else if (form.password !== form.confirm) return res.redirect('signin.html');
     const pseudo = form.pseudo;
     const password = form.password;
     r.db('messaging').table('user').filter(r.row('pseudo').eq(pseudo)).run(conn)
         .then((c) => c.next())
         .then((a) => {
             console.log('ERROR: ', a);
-            res.redirect('signin.html');
+            res.status(403).redirect('signin.html');
         })
         .catch((err) => {
+            console.log(err);
             bcrypt.hash(password, 10, (err, hash) => {
                 if (err) return res.status(400).json({ success: false, description: err });
                 r.db('messaging').table('user').insert({ pseudo: pseudo, password: hash }).run(conn);
@@ -175,7 +168,3 @@ messageBus.addListener('message', (msg) => {
         }
     ).run(conn);
 });
-
-function generateAccessToken(user) {
-    return jwt.sign(user, secret);
-}
