@@ -7,6 +7,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <link rel="stylesheet" href="style.css">
+    <script>
+        function getCookie(name) {
+            if (document.cookie.length == 0) return false;
+
+            var regSepCookie = new RegExp('(; )', 'g');
+            var cookies = document.cookie.split(regSepCookie);
+
+            for (var i = 0; i < cookies.length; i++) {
+                var regInfo = new RegExp('=', 'g');
+                var infos = cookies[i].split(regInfo);
+                if (infos[0] == name) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if (getCookie('token')) {
+            document.location = 'http://localhost:3000/home.html';
+        }
+    </script>
     <script src="https://unpkg.com/feather-icons"></script>
 
     <title>accuiel</title>

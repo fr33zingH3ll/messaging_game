@@ -18,80 +18,55 @@ r.connect({ host: 'localhost', port: 28015 })
 app.use(express.static('static'));
 app.use(cookieParser());
 
-app.ws('/ws/:channel', (ws, req) => {
-    const channel = req.params.channel;
+app.ws('/channel', (ws, req) => {
+    // Vérification du token
     const token = req.cookies.token;
     const session = jwt.verify(token, secret);
-    messageBus.addListener('message.' + channel, (message) => {
-        ws.send(JSON.stringify(message));
-    });
-    messageBus.addListener('typing.' + channel, (message) => {
-        ws.send(JSON.stringify(message));
-    });
-    console.log('connecté');
+
+    // Vérification du token de session
+    const token_session = req.cookies.token_session;
+    const channel = jwt.verify(token_session, secret);
+    
+    console.log('INFO : channel : ' + channel.channel_name);
     ws.on('message', (text) => {
         const msg = JSON.parse(text);
         msg.autheur = session.pseudo;
         msg.channel = channel;
         switch (msg.action) {
             case 'typing':
-                messageBus.emit('typing.' + channel, msg);
+                messageBus.emit('typing.' + channel, JSON.parse({ autheur: msg.autheur }))
                 break;
-            case 'game':
-                /*
-                r.db('messaging').table('message')
-                    .filter(r.row('channel').eq(msg.channel))
-                    .orderBy('datetime').limit(1).run(conn)
-                    .then((c) => c.toArray())
-                    .then((a) => {
-                        if (a.length === 0) {
-                            messageBus.emit('message.' + channel, msg);
-                            messageBus.emit('message', msg);
-                            return;
-                        }
-                        switch (checkWordChaining(msg, a[0])) {
-                            case 3:
-                                const warning = {
-                                    'action': a[0].action,
-                                    'autheur': 'system',
-                                    'channel': channel,
-                                    'message': 'attendez la réponse d\'abord'
-                                };
-                                messageBus.emit('message.' + channel, warning);
-                                break;
-                            case 2:
-                                const win  = {
-                                    'action': a[0].action,
-                                    'autheur': 'system',
-                                    'channel': channel,
-                                    'message': 'vous avez gagnez ' + a[0].autheur
-                                };
-                                messageBus.emit('message.' + channel, win);
-                                break;
-                            case 1:
-                                messageBus.emit('message.' + channel, msg);
-                                messageBus.emit('message', msg);
-                                break;
-
-                            default:
-                                break;
-                        }
-                    });*/
-                messageBus.emit('message.' + channel, msg);
-                messageBus.emit('message', msg);
-                break;
-            case 'conv':
+            case 'send':
                 messageBus.emit('message.' + channel, msg);
                 messageBus.emit('message', msg);
                 break;
             default:
                 break;
         }
+
+    });
+    messageBus.addListener('message.' + channel, (message) => {
+        ws.send(JSON.stringify(message));
+    });
+    messageBus.addListener('typing.' + channel, (message) => {
+        ws.send(JSON.stringify(message));
+    });
+    messageBus.addListener('message', (msg) => {
+        r.db('messaging').table('message').insert(
+            {
+                'autheur': msg.autheur,
+                'channel': msg.channel,
+                'message': msg.message,
+                'datetime': new Date()
+            }
+        ).run(conn);
     });
 });
 
-app.get('/message/:channel', (req, res) => {
-    const channel = req.params.channel;
+app.get('/message', (req, res) => {
+    const token_session = req.cookies.token_session;
+    const channel = jwt.verify(token_session, secret);
+    const session = jwt.verify(token_session, secret);
     r.db('messaging').table('message').filter(r.row('channel').eq(channel)).orderBy('datetime').limit(50).run(conn)
         .then((c) => c.toArray())
         .then((a) => {
@@ -103,10 +78,19 @@ app.post('/login', express.urlencoded(), (req, res) => {
     const form = req.body;
     const pseudo = form.pseudo;
     const password = form.password;
-    r.db('messaging').table('user').filter(r.row('pseudo').eq(pseudo)).limit(1).run(conn)
-        .then((cursor) => cursor.next())
-        .then((results) => {
-            if (bcrypt.compareSync(password, results.password)) {
+    if (form.pseudo === '' || form.password === '') {
+        console.log('ERROR : L\'un des champs est vide, redirection vers login.html.');
+        return res.redirect('/login.html?success=false&description=field_empty');
+    }
+    console.log('INFO : Champs valides, vérification du user en DB.');
+    r.db('messaging').table('user').filter(r.row('pseudo').eq(pseudo)).run(conn)
+        .then((c) => c.next())
+        .then((a) => {
+            console.log('INFO : User enregistrer en DB, teste du mot de passe.');
+            if (!bcrypt.compareSync(password, a.password)) {
+                console.log('ERROR : Mot de passe incorecte, redirection vers login.html.');
+                return res.redirect('/login.html?success=false&description=incorrect_identifiers');
+            } else {
                 const session = {
                     id: strRandom({
                         startsWithLowerCase: true,
@@ -114,57 +98,47 @@ app.post('/login', express.urlencoded(), (req, res) => {
                         includeUpperCase: true,
                         includeNumbers: true
                     }),
-                    pseudo:pseudo
+                    pseudo: pseudo
                 };
-                res.cookie('token', jwt.sign(session, secret));
-                res.redirect('index.html');
+                const accessToken = jwt.sign(session, secret);
+                req.cookies.token = accessToken;
+                console.log('INFO : Mot de passe correct, redirection vers index.html.');
+                return res.redirect('/index.html?sucess=true&description=successful_connection');
             }
         })
         .catch((err) => {
-            console.log("ERROR : ",err.message);
-            res.redirect('login.html');
+            if (err) {
+                console.log('ERROR : message => '+err.message);
+                return res.redirect('/login.html?success=false&description='+err.message);
+            }
         });
 });
 
 app.post('/signin', express.urlencoded(), (req, res) => {
     const form = req.body;
-    if (form.pseudo === '' || form.password === '' || form.confirm === '') return res.redirect('signin.html');
-    else if (form.password !== form.confirm) return res.redirect('signin.html');
+    if (form.pseudo === '' || form.password === '' || form.confirm === '') return res.send({ success: false, description: 'field empty' });;
+    if (form.password !== form.confirm) return res.send({ success: false, description: 'password not confirmed' })
     const pseudo = form.pseudo;
     const password = form.password;
     r.db('messaging').table('user').filter(r.row('pseudo').eq(pseudo)).run(conn)
         .then((c) => c.next())
-        .then((a) => {
-            console.log('ERROR: ', a);
-            res.status(403).redirect('signin.html');
+        .then(() => {
+            res.send({success: false, description: 'already registered'})
         })
-        .catch((err) => {
-            console.log(err);
+        .catch(() => {
             bcrypt.hash(password, 10, (err, hash) => {
                 if (err) return res.status(400).json({ success: false, description: err });
                 r.db('messaging').table('user').insert({ pseudo: pseudo, password: hash }).run(conn);
-                res.redirect('login.html');
+                res.send({ success: true, description: 'successful registration' })
             });
         });
 });
 
 app.use((err, req, res, next) => {
     console.error(err.stack)
-    res.status(500).send('Something broke!')
+    res.status(500).send(err.message)
 });
 
 app.listen(port, () => {
     console.log(`Example app listening on port ${port}`);
-});
-
-messageBus.addListener('message', (msg) => {
-    r.db('messaging').table('message').insert(
-        {
-            'autheur': msg.autheur,
-            'channel': msg.channel,
-            'message': msg.message,
-            'action': msg.action,
-            'datetime': new Date()
-        }
-    ).run(conn);
 });

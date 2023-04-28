@@ -32,7 +32,7 @@ function checkWordChaining(msg1, msg2) {
     const a1 = msg1.message.split('');
     const letter1 = a1[a1.length - 1];
     const letter2 = msg2.message.split('')[0];
-    
+
     if (letter1 !== letter2) {
         return 2;
     } else {
