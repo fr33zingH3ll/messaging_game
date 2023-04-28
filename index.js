@@ -26,7 +26,7 @@ app.ws('/channel', (ws, req) => {
     // Vérification du token de session
     const token_session = req.cookies.token_session;
     const channel = jwt.verify(token_session, secret);
-    
+
     console.log('INFO : channel : ' + channel.channel_name);
     ws.on('message', (text) => {
         const msg = JSON.parse(text);
@@ -82,11 +82,9 @@ app.post('/login', express.urlencoded(), (req, res) => {
         console.log('ERROR : L\'un des champs est vide, redirection vers login.html.');
         return res.redirect('/login.html?success=false&description=field_empty');
     }
-    console.log('INFO : Champs valides, vérification du user en DB.');
     r.db('messaging').table('user').filter(r.row('pseudo').eq(pseudo)).run(conn)
         .then((c) => c.next())
         .then((a) => {
-            console.log('INFO : User enregistrer en DB, teste du mot de passe.');
             if (!bcrypt.compareSync(password, a.password)) {
                 console.log('ERROR : Mot de passe incorecte, redirection vers login.html.');
                 return res.redirect('/login.html?success=false&description=incorrect_identifiers');
@@ -102,34 +100,40 @@ app.post('/login', express.urlencoded(), (req, res) => {
                 };
                 const accessToken = jwt.sign(session, secret);
                 req.cookies.token = accessToken;
-                console.log('INFO : Mot de passe correct, redirection vers index.html.');
                 return res.redirect('/index.html?sucess=true&description=successful_connection');
             }
         })
         .catch((err) => {
             if (err) {
-                console.log('ERROR : message => '+err.message);
-                return res.redirect('/login.html?success=false&description='+err.message);
+                console.log('ERROR : message => ' + err.message);
+                return res.redirect('/login.html?success=false&description=' + err.message);
             }
         });
 });
 
 app.post('/signin', express.urlencoded(), (req, res) => {
     const form = req.body;
-    if (form.pseudo === '' || form.password === '' || form.confirm === '') return res.send({ success: false, description: 'field empty' });;
-    if (form.password !== form.confirm) return res.send({ success: false, description: 'password not confirmed' })
     const pseudo = form.pseudo;
     const password = form.password;
+    if (form.pseudo === '' || form.password === '' || form.confirm === '') {
+        console.log('ERROR : message => L\'un des champs est vides, redirection vers signin.html.');
+        return res.redirect('/signin.html?success=false&description=field_empty');
+    }
+    if (form.password !== form.confirm) {
+        console.log('ERROR : message => le mot de passe n\'a été confirmé ou de facon incorrecte, redirection vers signin.html.')
+        return res.redirect('/signin.html?success=false&description=password_not_confirmed')
+    }
     r.db('messaging').table('user').filter(r.row('pseudo').eq(pseudo)).run(conn)
         .then((c) => c.next())
         .then(() => {
-            res.send({success: false, description: 'already registered'})
+            console.log('ERROR : message => cet utilisateur existe deja, redicteur vers signin.html.')
+            res.redirect('/signin.html?success=false&description=already_registered')
         })
         .catch(() => {
             bcrypt.hash(password, 10, (err, hash) => {
                 if (err) return res.status(400).json({ success: false, description: err });
                 r.db('messaging').table('user').insert({ pseudo: pseudo, password: hash }).run(conn);
-                res.send({ success: true, description: 'successful registration' })
+                res.redirect('/login.html?success=true&description=successful_registration')
             });
         });
 });
