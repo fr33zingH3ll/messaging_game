@@ -1,72 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>WebSockets Demo</title>
 
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+    <div id="page-wrapper">
+        <h1>WebSockets Demo</h1>
 
-    <link rel="stylesheet" href="style.css">
-    <script>
-        function getCookie(name) {
-            if (document.cookie.length == 0) return false;
+        <div id="status">Connecting...</div>
 
-            var regSepCookie = new RegExp('(; )', 'g');
-            var cookies = document.cookie.split(regSepCookie);
+        <ul id="messages"></ul>
 
-            for (var i = 0; i < cookies.length; i++) {
-                var regInfo = new RegExp('=', 'g');
-                var infos = cookies[i].split(regInfo);
-                if (infos[0] == name) {
-                    return true;
-                }
-            }
-            return false;
-        }
-        if (getCookie('token')) {
-            document.location = 'http://localhost:3000/home.html';
-        }
-    </script>
-    <script src="https://unpkg.com/feather-icons"></script>
-
-    <title>accuiel</title>
-</head>
-
-<body>
-    <header>
-        <i class="menu" data-feather="user"></i>
-        <div class="sous">
-            <ul>
-                <li><a href="/login.html">connexion</a></li>
-                <li><a href="/signin.html">inscription</a></li>
-            </ul>
-        </div>
-    </header>
-    <main>
-        <div>
-            <label for="create">Créer</label>
-            <form id="create" action="jeu.html" method="get">
-                <input type="hidden" name="create">
-                <input type="text" name="id"><br>
-                <input type="password" name="password">
-            </form>
-            <label for="join">Rejoindre</label>
-            <form id="join" action="jeu.html" method="get">
-                <input type="hidden" name="join">
-                <input type="text" name="id"><br>
-                <input type="password" name="password">
-            </form>
-        </div>
-        <label for="for">pour le moment</label>
-        <form id="for" action="jeu.html" method="get">
-            <input type="text" name="id">
+        <form id="message-form" action="#" method="post">
+            <textarea id="message" placeholder="Write your message here..." required></textarea>
+            <button type="submit">Send Message</button>
+            <button type="button" id="close">Close Connection</button>
         </form>
-    </main>
-    <footer></footer>
-
-    <script>
-        feather.replace()
-    </script>
+    </div>
+    <script src="app.js"></script>
 </body>
-
 </html>

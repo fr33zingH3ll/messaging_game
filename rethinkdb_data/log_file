@@ -1,0 +1,15 @@
+2023-09-15T04:13:19.542165174 0.034290s notice: Recursively removing directory /home/freezing/Documents/code/messaging_game/rethinkdb_data/tmp
+2023-09-15T04:13:19.546047182 0.038172s notice: Initializing directory /home/freezing/Documents/code/messaging_game/rethinkdb_data
+2023-09-15T04:13:19.546902326 0.039027s info: Creating a default database for your convenience. (This is because you ran 'rethinkdb' without 'create', 'serve', or '--join', and the directory '/home/freezing/Documents/code/messaging_game/rethinkdb_data' did not already exist or is empty.)
+2023-09-15T04:13:19.547684704 0.039809s notice: Running rethinkdb 2.4.3~0jammy (x86_64-linux-gnu) (GCC 11.3.0)...
+2023-09-15T04:13:19.551384274 0.043510s notice: Running on Linux 6.2.0-32-generic x86_64
+2023-09-15T04:13:19.551458346 0.043583s notice: Loading data from directory /home/freezing/Documents/code/messaging_game/rethinkdb_data
+2023-09-15T04:13:19.590325888 0.082450s info: Automatically using cache size of 2300 MB
+2023-09-15T04:13:19.598502244 0.090627s notice: Listening for intracluster connections on port 29015
+2023-09-15T04:13:19.604619017 0.096744s notice: Listening for client driver connections on port 28015
+2023-09-15T04:13:19.604741871 0.096866s notice: Listening for administrative HTTP connections on port 8080
+2023-09-15T04:13:19.604772251 0.096897s notice: Listening on cluster addresses: 127.0.0.1, ::1
+2023-09-15T04:13:19.604931603 0.097056s notice: Listening on driver addresses: 127.0.0.1, ::1
+2023-09-15T04:13:19.604945883 0.097070s notice: Listening on http addresses: 127.0.0.1, ::1
+2023-09-15T04:13:19.604954294 0.097079s notice: To fully expose RethinkDB on the network, bind to all addresses by running rethinkdb with the `--bind all` command line option.
+2023-09-15T04:13:19.604961204 0.097086s notice: Server ready, "freezing_virtual_machine_8yo" 19d12005-6e32-4e1e-929c-fdd966755317
